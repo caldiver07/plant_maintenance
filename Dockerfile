@@ -5,7 +5,6 @@ FROM python:3.9-slim
 WORKDIR /app
 
 # Copy the requirements file into the container at /app
-# We'll create this file in the next step
 COPY requirements.txt .
 
 # Install any needed packages specified in requirements.txt
@@ -21,5 +20,5 @@ EXPOSE 5000
 ENV FLASK_APP=app.py
 ENV FLASK_RUN_HOST=0.0.0.0
 
-# Run the command to start the Flask server
-CMD ["flask", "run"]
+# Initialize the database, then run the command to start the Flask server.
+CMD flask init-db && flask run
