@@ -3,13 +3,14 @@ import sqlite3
 from datetime import datetime, timedelta
 import calendar
 import os
+import click
+from flask.cli import with_appcontext
 
 app = Flask(__name__)
 
 # --- Database Setup ---
 def get_db_connection():
     """Creates a database connection."""
-    # Store the database in a persistent volume if running in Docker
     db_path = '/app/data/plants.db'
     os.makedirs(os.path.dirname(db_path), exist_ok=True)
     conn = sqlite3.connect(db_path)
@@ -29,6 +30,15 @@ def init_db():
             )
         ''')
         conn.commit()
+
+@click.command('init-db')
+@with_appcontext
+def init_db_command():
+    """Clear the existing data and create new tables."""
+    init_db()
+    click.echo('Initialized the database.')
+
+app.cli.add_command(init_db_command)
 
 # --- Routes ---
 @app.route('/')
@@ -62,7 +72,6 @@ def index():
     
     watering_schedule = {}
     for plant in plant_list:
-        # Calculate upcoming waterings for the next 2 months for the calendar
         next_date = plant['next_watering']
         for _ in range(60 // plant['watering_frequency'] + 1):
             if next_date.month == now.month and next_date.year == now.year:
@@ -112,9 +121,3 @@ def delete_plant(plant_id):
         conn.execute('DELETE FROM plants WHERE id = ?', (plant_id,))
         conn.commit()
     return redirect(url_for('index'))
-
-# --- Main Execution ---
-if __name__ == '__main__':
-    init_db()
-    # Host is set to 0.0.0.0 to be accessible within the Docker network
-    app.run(host='0.0.0.0', port=5000)
